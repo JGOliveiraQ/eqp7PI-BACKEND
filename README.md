@@ -1,144 +1,184 @@
 # Saúde Recife — Backend API
 
-API RESTful da plataforma municipal **Saúde Recife**, desenvolvida em Node.js com Express e MongoDB. A aplicação é responsável por gerenciar dados de saúde pública, autenticação segura de usuários e integração com modelos de inteligência artificial via Google Gemini para assistência e triagem inteligente.
+API RESTful da plataforma municipal **Saúde Recife**, desenvolvida em Node.js com Express e MongoDB. A aplicação gerencia autenticação de pacientes, agendamentos, listagem de profissionais e triagem inteligente com IA via Google Gemini.
 
 ---
 
 ## 📋 Pré-requisitos
 
-Certifique-se de que os seguintes softwares e serviços estejam instalados e configurados em sua máquina antes de prosseguir:
-
-- **Node.js**: Versão `18.0.0` ou superior (recomendado `20.x LTS`). Verifique com:
-  ```bash
-  node -v
-  ```
-- **Git**: Sistema de controle de versão. Verifique com:
-  ```bash
-  git --version
-  ```
-- **Conta no MongoDB Atlas**: Acesso a um cluster no MongoDB Atlas com usuário e senha devidamente configurados e IP liberado em *Network Access* (ou `0.0.0.0/0` para ambiente de desenvolvimento).
-- **Google AI Studio API Key**: Chave de acesso à API do Google Gemini.
+- Node.js 18+ 
+- npm
+- MongoDB Atlas com cluster ativo
+- Chave da Google AI Studio (`GEMINI_API_KEY`)
 
 ---
 
-## 🚀 Passo a Passo de Setup (Checklist de Onboarding)
+## 🚀 Setup rápido
 
-Siga este checklist em sequência para inicializar o ambiente de desenvolvimento do zero:
+1. Clone o repositório
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Crie o arquivo `.env` local com base no exemplo:
+   ```bash
+   Copy-Item .env.example .env
+   ```
+4. Preencha as variáveis reais do ambiente
+5. Rode o backend:
+   ```bash
+   npm run dev
+   ```
+6. Popule o banco inicial:
+   ```bash
+   npm run seed
+   ```
 
-- [ ] **1. Clonar o repositório**
-  ```bash
-  git clone https://github.com/seu-usuario/saude-recife-backend.git
-  cd saude-recife-backend
+---
+
+## 🔐 Variáveis de ambiente
+
+Arquivo `.env` (não versionado):
+
+```env
+PORT=5000
+MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/saude_recife
+JWT_SECRET=seu_jwt_secret_aqui
+GEMINI_API_KEY=sua_chave_gemini_aqui
+```
+
+> O arquivo `.env.example` deve servir como modelo para a equipe, mas nunca deve conter segredos reais.
+
+---
+
+## 🧩 Scripts disponíveis
+
+```bash
+npm run dev
+npm start
+npm run seed
+npm run lint
+```
+
+---
+
+## 📚 Endpoints da API
+
+### Health
+- `GET /api/health`
+
+### Autenticação
+- `POST /api/auth/cadastro`
+  Payload:
+  ```json
+  {
+    "nome": "Maria da Silva",
+    "cpf": "52998224725",
+    "email": "maria@email.com",
+    "senha": "123456",
+    "dataNascimento": "1965-08-27",
+    "telefone": "81999999999"
+  }
   ```
 
-- [ ] **2. Instalar dependências**
-  ```bash
-  npm install
+- `POST /api/auth/login`
+  Payload:
+  ```json
+  {
+    "email": "maria@email.com",
+    "senha": "123456"
+  }
   ```
 
-- [ ] **3. Configurar variáveis de ambiente**
-  Copie o modelo de variáveis de ambiente para criar o seu arquivo `.env`:
-  - **Linux / macOS:**
-    ```bash
-    cp .env.example .env
-    ```
-  - **Windows (PowerShell):**
-    ```powershell
-    Copy-Item .env.example .env
-    ```
-  Abra o arquivo `.env` e substitua os valores padrão com suas credenciais reais (detalhes na tabela abaixo).
+- `GET /api/auth/perfil` (requer token JWT)
+- `PUT /api/auth/perfil` (requer token JWT)
 
-- [ ] **4. Iniciar o servidor em modo de desenvolvimento**
-  ```bash
-  npm run dev
-  ```
-  O console exibirá a mensagem de conexão bem-sucedida com o MongoDB e a confirmação da porta ativa (padrão: `5000`):
-  ```text
-  MongoDB Connected: cluster.mongodb.net
-  Server running on port 5000
+### Médicos
+- `GET /api/medicos?especialidade=Cardiologia`
+- `GET /api/medicos/:id`
+- `GET /api/especialidades`
+
+### Agendamentos
+- `POST /api/agendamentos` (requer token JWT)
+  Payload:
+  ```json
+  {
+    "profissionalId": "ID_DO_PROFISSIONAL",
+    "clinicaId": "ID_DA_CLINICA",
+    "dataHora": "2026-09-30T14:00:00.000Z",
+    "tipo": "Presencial",
+    "instrucoes": "Chegar com 10 minutos de antecedência."
+  }
   ```
 
-- [ ] **5. Validar a execução**
-  Em outro terminal, execute uma requisição para a rota de health check:
-  ```bash
-  curl http://localhost:5000/api/health
+- `GET /api/agendamentos/meus-agendamentos?filtro=proximos`
+- `GET /api/agendamentos/meus-agendamentos?filtro=historico`
+- `PUT /api/agendamentos/:id/reagendar`
+  Payload:
+  ```json
+  {
+    "dataHora": "2026-10-02T16:00:00.000Z",
+    "tipo": "Telemedicina",
+    "instrucoes": "Manter o celular próximo."
+  }
   ```
+- `PUT /api/agendamentos/:id/cancelar`
+
+### IA / Triagem
+- `POST /api/ia/triagem`
+  Payload:
+  ```json
+  {
+    "queixa": "dor na junta, dificuldade para caminhar e sensação de rigidez"
+  }
+  ```
+
   Resposta esperada:
   ```json
   {
-    "status": "ok",
-    "service": "saude-recife-backend",
-    "uptime": 1.25,
-    "timestamp": "2026-09-16T14:30:00.000Z"
+    "sintomasIdentificados": ["dor na junta", "rigidez", "dificuldade para caminhar"],
+    "especialidadeRecomendada": "Ortopedia",
+    "observacoes": "A queixa pode estar relacionada a articulações e mobilidade. Avaliação médica é recomendada.",
+    "alertaEmergencia": false
   }
   ```
 
 ---
 
-## 🔐 Variáveis de Ambiente
+## 🧪 Validação básica
 
-O arquivo `.env` centraliza as configurações sensíveis e de conexão do projeto. Veja o detalhamento de cada variável:
-
-| Variável | Tipo | Obrigatória | Descrição | Exemplo de Valor |
-| :--- | :--- | :---: | :--- | :--- |
-| `PORT` | Number | Não | Porta TCP na qual o servidor HTTP Express escuta requisições. Se omitida, assume `5000`. | `5000` |
-| `MONGO_URI` | String | Sim | String de conexão completa com o cluster MongoDB Atlas (incluindo protocolo `mongodb+srv://`, credenciais e nome do banco de dados). | `mongodb+srv://usuario:senha@cluster.mongodb.net/saude_recife` |
-| `JWT_SECRET` | String | Sim | Chave criptográfica privada utilizada para assinar e validar tokens JSON Web Token (JWT) nas rotas protegidas. | `seu_jwt_secret_aqui` |
-| `GEMINI_API_KEY` | String | Sim | Chave de autenticação fornecida pelo Google AI Studio para comunicação com a SDK `@google/genai`. | `sua_chave_gemini_aqui` |
-
----
-
-## 🛠️ Scripts Disponíveis
-
-No arquivo `package.json`, estão configurados os seguintes scripts operacionais:
-
-| Script | Comando | Descrição |
-| :--- | :--- | :--- |
-| `npm run dev` | `nodemon src/server.js` | Inicializa o servidor com hot reload através do Nodemon, reiniciando automaticamente o processo a cada alteração em arquivos de código. |
-| `npm start` | `node src/server.js` | Executa o servidor Node.js em modo direto (produção), sem overhead de observadores de arquivos. |
-| `npm run lint` | `eslint .` | Executa o linter ESLint em todo o código-fonte seguindo o padrão Flat Config (`eslint.config.js`), validando conformidade e boas práticas. |
-
----
-
-## 📂 Estrutura de Pastas
-
-```text
-saude-recife-backend/
-├── .env.example          # Modelo das variáveis de ambiente necessárias
-├── eslint.config.js      # Configuração do ESLint 9 (Flat Config)
-├── package.json          # Manifesto do projeto, dependências e scripts
-├── README.md             # Esta documentação
-└── src/
-    ├── server.js         # Ponto de entrada da aplicação e inicialização do Express
-    ├── config/           # Configurações de conexões externas (ex: db.js para MongoDB)
-    ├── controllers/      # Controladores de regras de negócio e retorno HTTP
-    ├── middlewares/      # Interceptadores de requisições (autenticação, errorHandler)
-    ├── models/           # Schemas e modelos do Mongoose
-    └── routes/           # Mapeamento e exportação de rotas da API REST
+```bash
+curl http://localhost:5000/api/health
+curl -X POST http://localhost:5000/api/auth/cadastro -H "Content-Type: application/json" -d '{"nome":"Maria","cpf":"52998224725","email":"maria@email.com","senha":"123456"}'
+curl "http://localhost:5000/api/medicos?especialidade=Cardiologia"
 ```
 
 ---
 
-## 🌿 Convenções do Git & Workflow
+## 📁 Estrutura principal
 
-Para garantir a qualidade e rastreabilidade do código, todos os membros da equipe devem seguir rigorosamente este fluxo de trabalho:
+```text
+src/
+├── config/
+├── controllers/
+├── middlewares/
+├── models/
+├── routes/
+├── scripts/
+├── server.js
+```
 
-### 1. Estrutura de Branches
-- **`main`**: Branch de produção. Contém apenas código testado, validado e pronto para deploy. Protegida contra commits diretos.
-- **`dev`**: Branch de integração contínua. Todos os novos desenvolvimentos convergem para ela após aprovação.
-- **`feat/nome-da-feature`**: Branches de trabalho criadas **a partir da `dev`** para novas funcionalidades (ex: `feat/triagem-gemini`, `feat/auth-jwt`).
-- **`fix/nome-do-bug`**: Branches de correção criadas a partir da `dev` (ou de `main` em casos emergenciais de hotfix).
+---
 
-### 2. Padrão de Commits (Conventional Commits)
-As mensagens de commit devem ser escritas no padrão [Conventional Commits](https://www.conventionalcommits.org/):
-- `feat:` Inclusão de nova funcionalidade. Exemplo: `feat: adicionar rota de autenticacao de usuarios`
-- `fix:` Correção de defeito/bug. Exemplo: `fix: tratar erro de conexao com mongodb atlas`
-- `docs:` Alteração exclusiva em documentação. Exemplo: `docs: atualizar instrucoes de configuracao do atlas`
-- `chore:` Tarefas de manutenção, atualização de dependências ou ajustes de build. Exemplo: `chore: atualizar dependencia @google/genai`
-- `refactor:` Refatoração de código que não altera o comportamento funcional. Exemplo: `refactor: modularizar conexao com banco`
+## 🌿 Workflow do grupo
 
-### 3. Política de Pull Requests (PR)
-- Toda alteração deve ser submetida via Pull Request direcionada para a branch **`dev`**.
-- **Revisão Obrigatória:** É **mandatório** obter a aprovação de pelo menos **1 colega de equipe (peer review)** antes de realizar o merge.
-- **Checks de CI:** O PR só poderá sofrer merge se a validação estática de código passar sem erros (`npm run lint`).
-- Nunca force commits (`git push --force`) nas branches `dev` ou `main`.
+- Branch `main` para versão estável
+- Branches `feat/...` para novas funcionalidades
+- PR obrigatório para merge
+- Sempre rodar `npm run lint` antes de subir código
+
+---
+
+## ✅ Status
+
+O backend está pronto para transição para o Frontend com a base funcional completa de autenticação, médicos, agendamentos e inteligência artificial.
