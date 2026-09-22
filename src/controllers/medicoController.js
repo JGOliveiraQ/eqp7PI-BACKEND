@@ -19,8 +19,7 @@ const gerarAgendaDisponivel = () => {
   return slots;
 };
 
-export const listarMedicos = async (req, res, next) => {
-  try {
+export const listarMedicos = async (req, res) => {
     const { especialidade, busca, atendeTelemedicina } = req.query;
     const filtro = {};
 
@@ -53,13 +52,9 @@ export const listarMedicos = async (req, res, next) => {
         agendaDisponivel: gerarAgendaDisponivel()
       }))
     });
-  } catch (error) {
-    next(error);
-  }
 };
 
-export const listarEspecialidades = async (req, res, next) => {
-  try {
+export const listarEspecialidades = async (req, res) => {
     const especialidades = await Profissional.aggregate([
       { $group: { _id: "$especialidade", total: { $sum: 1 } } },
       { $sort: { _id: 1 } }
@@ -72,13 +67,9 @@ export const listarEspecialidades = async (req, res, next) => {
         totalMedicos: item.total
       }))
     });
-  } catch (error) {
-    next(error);
-  }
 };
 
-export const obterDetalhesMedico = async (req, res, next) => {
-  try {
+export const obterDetalhesMedico = async (req, res) => {
     const { id } = req.params;
 
     const profissional = await Profissional.findById(id).populate({
@@ -104,7 +95,4 @@ export const obterDetalhesMedico = async (req, res, next) => {
       agenda,
       agendaDisponivel: gerarAgendaDisponivel()
     });
-  } catch (error) {
-    next(error);
-  }
 };

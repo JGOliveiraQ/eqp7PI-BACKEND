@@ -4,11 +4,12 @@ import {
   listarMedicos,
   obterDetalhesMedico
 } from "../controllers/medicoController.js";
+import { asyncHandler } from "../middlewares/asyncHandler.js";
 
 const router = Router();
 
-router.get("/", listarMedicos);
-router.get("/especialidades", listarEspecialidades);
-router.get("/:id", obterDetalhesMedico);
+router.get("/", asyncHandler(listarMedicos));
+router.get("/especialidades", asyncHandler(listarEspecialidades));
+router.get("/:id", asyncHandler(obterDetalhesMedico));
 
 export default router;

@@ -56,9 +56,8 @@ const cpfEhValido = (cpf) => {
   return Number(cpfLimpo.charAt(10)) === segundoDigito;
 };
 
-export const cadastrarPaciente = async (req, res, next) => {
-  try {
-    const {
+export const cadastrarPaciente = async (req, res) => {
+  const {
       nome,
       cpf,
       email,
@@ -66,36 +65,36 @@ export const cadastrarPaciente = async (req, res, next) => {
       dataNascimento,
       telefone,
       fotoUrl
-    } = req.body;
+  } = req.body;
 
-    if (!nome || !cpf || !email || !senha) {
+  if (!nome || !cpf || !email || !senha) {
       return res.status(400).json({
         message: "nome, cpf, email e senha são obrigatórios."
       });
-    }
+  }
 
-    const cpfNormalizado = normalizarCpf(cpf);
+  const cpfNormalizado = normalizarCpf(cpf);
 
-    if (!cpfEhValido(cpfNormalizado)) {
+  if (!cpfEhValido(cpfNormalizado)) {
       return res.status(400).json({ message: "CPF inválido." });
-    }
+  }
 
-    const emailNormalizado = String(email).trim().toLowerCase();
+  const emailNormalizado = String(email).trim().toLowerCase();
 
-    const pacienteExistente = await Paciente.findOne({
+  const pacienteExistente = await Paciente.findOne({
       $or: [
         { cpf: cpfNormalizado },
         { email: emailNormalizado }
       ]
-    });
+  });
 
-    if (pacienteExistente) {
+  if (pacienteExistente) {
       const motivo = pacienteExistente.email === emailNormalizado ? "E-mail já cadastrado." : "CPF já cadastrado.";
       return res.status(409).json({ message: motivo });
-    }
+  }
 
-    const senhaHash = await bcrypt.hash(senha, 10);
-    const paciente = await Paciente.create({
+  const senhaHash = await bcrypt.hash(senha, 10);
+  const paciente = await Paciente.create({
       nome: String(nome).trim(),
       cpf: cpfNormalizado,
       email: emailNormalizado,
@@ -104,101 +103,86 @@ export const cadastrarPaciente = async (req, res, next) => {
       telefone: telefone ? String(telefone).trim() : "",
       fotoUrl: fotoUrl || "",
       tipo: "PACIENTE"
-    });
+  });
 
-    const token = gerarToken(paciente);
+  const token = gerarToken(paciente);
 
-    return res.status(201).json({
+  return res.status(201).json({
       message: "Paciente cadastrado com sucesso.",
       token,
       usuario: paciente.toPublicJSON()
-    });
-  } catch (error) {
-    next(error);
-  }
+  });
 };
 
-export const loginPaciente = async (req, res, next) => {
-  try {
-    const { email, senha } = req.body;
+export const loginPaciente = async (req, res) => {
+  const { email, senha } = req.body;
 
-    if (!email || !senha) {
+  if (!email || !senha) {
       return res.status(400).json({
         message: "email e senha são obrigatórios."
       });
-    }
+  }
 
-    const paciente = await Paciente.findOne({
+  const paciente = await Paciente.findOne({
       email: String(email).trim().toLowerCase()
-    });
+  });
 
-    if (!paciente) {
+  if (!paciente) {
       return res.status(401).json({ message: "Credenciais inválidas." });
-    }
+  }
 
-    const senhaValida = await bcrypt.compare(String(senha), paciente.senha);
-    if (!senhaValida) {
+  const senhaValida = await bcrypt.compare(String(senha), paciente.senha);
+  if (!senhaValida) {
       return res.status(401).json({ message: "Credenciais inválidas." });
-    }
+  }
 
-    const token = gerarToken(paciente);
+  const token = gerarToken(paciente);
 
-    return res.status(200).json({
+  return res.status(200).json({
       message: "Login realizado com sucesso.",
       token,
       usuario: paciente.toPublicJSON()
-    });
-  } catch (error) {
-    next(error);
-  }
+  });
 };
 
-export const obterPerfilPaciente = async (req, res, next) => {
-  try {
-    const paciente = await Paciente.findById(req.usuario.pacienteId).select("-senha");
+export const obterPerfilPaciente = async (req, res) => {
+  const paciente = await Paciente.findById(req.usuario.pacienteId).select("-senha");
 
-    if (!paciente) {
+  if (!paciente) {
       return res.status(404).json({ message: "Paciente não encontrado." });
-    }
-
-    return res.status(200).json({ usuario: paciente.toObject() });
-  } catch (error) {
-    next(error);
   }
+
+  return res.status(200).json({ usuario: paciente.toObject() });
 };
 
-export const atualizarPerfilPaciente = async (req, res, next) => {
-  try {
-    const paciente = await Paciente.findById(req.usuario.pacienteId);
+export const atualizarPerfilPaciente = async (req, res) => {
+  const paciente = await Paciente.findById(req.usuario.pacienteId);
 
-    if (!paciente) {
+  if (!paciente) {
       return res.status(404).json({ message: "Paciente não encontrado." });
-    }
+  }
 
-    const camposPermitidos = [
+  const camposPermitidos = [
       "nome",
       "telefone",
       "dataNascimento",
       "fotoUrl"
-    ];
+  ];
 
-    camposPermitidos.forEach((campo) => {
+  camposPermitidos.forEach((campo) => {
       if (req.body[campo] !== undefined) {
         paciente[campo] = req.body[campo];
       }
-    });
+  });
 
-    if (req.body.senha) {
+  if (req.body.senha) {
       paciente.senha = await bcrypt.hash(String(req.body.senha), 10);
-    }
+  }
 
-    await paciente.save();
+  await paciente.save();
 
-    return res.status(200).json({
+  return res.status(200).json({
       message: "Perfil atualizado com sucesso.",
       usuario: paciente.toPublicJSON()
-    });
-  } catch (error) {
-    next(error);
-  }
+  });
 };

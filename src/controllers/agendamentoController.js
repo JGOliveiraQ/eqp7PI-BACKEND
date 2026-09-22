@@ -16,7 +16,7 @@ const validarDataFutura = (dataHora) => {
   return { valido: true, data };
 };
 
-export const criarAgendamento = async (req, res, next) => {
+export const criarAgendamento = async (req, res) => {
   try {
     const pacienteId = obterPacienteId(req);
 
@@ -64,12 +64,11 @@ export const criarAgendamento = async (req, res, next) => {
         message: "Este horário não está mais disponível para este profissional."
       });
     }
-    next(error);
+    throw error;
   }
 };
 
-export const listarAgendamentosPaciente = async (req, res, next) => {
-  try {
+export const listarAgendamentosPaciente = async (req, res) => {
     const pacienteId = obterPacienteId(req);
 
     if (!pacienteId) {
@@ -94,13 +93,9 @@ export const listarAgendamentosPaciente = async (req, res, next) => {
       .sort({ dataHora: filtro === "historico" ? -1 : 1 });
 
     return res.status(200).json(agendamentos);
-  } catch (error) {
-    next(error);
-  }
 };
 
-export const reagendarAgendamento = async (req, res, next) => {
-  try {
+export const reagendarAgendamento = async (req, res) => {
     const pacienteId = obterPacienteId(req);
     const { id } = req.params;
     const { dataHora, tipo, instrucoes } = req.body;
@@ -141,13 +136,9 @@ export const reagendarAgendamento = async (req, res, next) => {
     await agendamento.save();
 
     return res.status(200).json({ message: "Agendamento reagendado com sucesso.", agendamento });
-  } catch (error) {
-    next(error);
-  }
 };
 
-export const cancelarAgendamento = async (req, res, next) => {
-  try {
+export const cancelarAgendamento = async (req, res) => {
     const pacienteId = obterPacienteId(req);
     const { id } = req.params;
 
@@ -168,8 +159,5 @@ export const cancelarAgendamento = async (req, res, next) => {
       message: "Agendamento cancelado com sucesso.",
       agendamento
     });
-  } catch (error) {
-    next(error);
-  }
 };
 
