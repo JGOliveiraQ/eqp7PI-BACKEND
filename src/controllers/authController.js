@@ -210,6 +210,34 @@ export const obterPerfilPaciente = async (req, res) => {
   return res.status(200).json({ usuario: paciente.toObject() });
 };
 
+export const solicitarRecuperacaoSenha = async (req, res) => {
+  const { identificador } = req.body || {};
+
+  if (!identificador || !String(identificador).trim()) {
+    return res.status(400).json({
+      message: "Informe seu e-mail ou CPF."
+    });
+  }
+
+  const valor = String(identificador).trim();
+  const paciente = await Paciente.findOne({
+    $or: [
+      { email: valor.toLowerCase() },
+      { cpf: normalizarCpf(valor) }
+    ]
+  });
+
+  if (!paciente) {
+    return res.status(200).json({
+      message: "Se as informações estiverem corretas, enviaremos instruções para recuperação de senha."
+    });
+  }
+
+  return res.status(200).json({
+    message: "Se as informações estiverem corretas, enviaremos instruções para recuperação de senha."
+  });
+};
+
 export const atualizarPerfilPaciente = async (req, res) => {
   const paciente = await Paciente.findById(req.usuario.pacienteId);
 
